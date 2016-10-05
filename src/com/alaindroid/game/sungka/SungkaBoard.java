@@ -9,12 +9,14 @@ public class SungkaBoard {
 	public ScoreContainer enScore;
 
 	public byte[] meDiff;
+	public int meHDiff;
 	public byte[] enDiff;
 
 	private int stepsLeft;
 	private boolean meSide;
 	private int onHand;
 	private int dropLoc;
+	private boolean meTurn;
 
 	/*
 	 * Constructors
@@ -32,6 +34,7 @@ public class SungkaBoard {
 		}
 		this.meScore = new ScoreContainer();
 		this.enScore = new ScoreContainer();
+		meHDiff = 1;
 	}
 
 	public SungkaBoard(byte[] meHoles, byte[] enHoles, ScoreContainer meScore, ScoreContainer enScore) {
@@ -45,16 +48,18 @@ public class SungkaBoard {
 			this.meDiff[i] = 1;
 			this.enDiff[i] = 1;
 		}
+		this.meHDiff = 1;
 	}
 
 	public SungkaBoard(byte[] meHoles, byte[] enHoles, ScoreContainer meScore, ScoreContainer enScore, byte[] meDiff,
-			byte[] enDiff) {
+			byte[] enDiff, byte meHDiff) {
 		this.meHoles = meHoles;
 		this.enHoles = enHoles;
 		this.meScore = meScore;
 		this.enScore = enScore;
 		this.meDiff = meDiff;
 		this.enDiff = enDiff;
+		this.meHDiff = meHDiff;
 	}
 
 	/*
@@ -62,6 +67,20 @@ public class SungkaBoard {
 	 */
 	public SungkaBoard getEnemyBoard() {
 		return new SungkaBoard(enHoles, meHoles, enScore, meScore);
+	}
+
+	public SungkaBoard clone() {
+		int meLen = this.meHoles.length;
+		int enLen = this.enHoles.length;
+		byte[] meHoles = new byte[meLen];
+		byte[] enHoles = new byte[enLen];
+		ScoreContainer meScore = new ScoreContainer();
+		ScoreContainer enScore = new ScoreContainer();
+		System.arraycopy(this.meHoles, 0, meHoles, 0, meLen);
+		System.arraycopy(this.enHoles, 0, enHoles, 0, enLen);
+		meScore.score = this.meScore.score;
+		enScore.score = this.enScore.score;
+		return new SungkaBoard(meHoles, enHoles, meScore, enScore);
 	}
 
 	/**
@@ -74,10 +93,11 @@ public class SungkaBoard {
 		if (location < 0 || location >= meHoles.length) {
 			throw new InvalidParameterException("Invalid location " + location);
 		}
-
+		meTurn = false;
 		stepsLeft = step;
 		meSide = me;
 		onHand = 0;
+
 		if (meSide) {
 			onHand = meHoles[location];
 			meHoles[location] = 0;
@@ -85,53 +105,65 @@ public class SungkaBoard {
 			onHand = enHoles[location];
 			enHoles[location] = 0;
 		}
-		dropLoc = location + 1;
 		MoveResult moveResult = new MoveResult();
-		while (onHand > 0) {
-			// me side drops
-			moveResult.lastMeSide = meSide;
-			moveResult.lastIndex = dropLoc;
-			if (meSide) {
-				// score hole
-				int diff = meDiff[dropLoc];
-				if (dropLoc >= meHoles.length) {
-					meScore.score += diff;
-					meSide = false;
-					onHand -= diff;
-					dropLoc = 0;
-				} else {
-					meHoles[dropLoc] += diff;
-					onHand -= diff;
-					if (onHand == 0 && stepsLeft > 0) {
-						stepsLeft--;
-						onHand = meHoles[dropLoc];
-						meHoles[dropLoc] = 0;
+		if (onHand > 0) {
+			dropLoc = location + 1;
+			while (onHand > 0) {
+				// me side drops
+				moveResult.lastMeSide = meSide;
+				moveResult.lastIndex = dropLoc;
+				if (meSide) {
+					// score hole
+					if (dropLoc >= meHoles.length) {
+						int diff = meHDiff;
+						meScore.score += diff;
+						meSide = false;
+						onHand -= diff;
+						dropLoc = 0;
+					} else {
+						int diff = meDiff[dropLoc];
+						meHoles[dropLoc] += diff;
+						onHand -= diff;
+						if (onHand == 0 && meHoles[dropLoc] > diff) {
+							if (stepsLeft > 0) {
+								stepsLeft--;
+								onHand = meHoles[dropLoc];
+								meHoles[dropLoc] = 0;
+							} else {
+								meTurn = true;
+							}
+						}
+						dropLoc++;
 					}
-					dropLoc++;
-				}
-			} else { // enemy side
-				// score hole
-				if (dropLoc >= enHoles.length) {
-					meSide = true;
-					dropLoc = 0;
-					continue;
-				} else {
-					enHoles[dropLoc]++;
-					onHand--;
-					if (onHand == 0 && stepsLeft > 0) {
-						stepsLeft--;
-						onHand = enHoles[dropLoc];
-						enHoles[dropLoc] = 0;
+				} else { // enemy side
+					// score hole
+					if (dropLoc >= enHoles.length) {
+						meSide = true;
+						dropLoc = 0;
+						continue;
+					} else {
+						int diff = enDiff[dropLoc];
+						enHoles[dropLoc] += diff;
+						onHand -= diff;
+						if (onHand == 0 && enHoles[dropLoc] > diff) {
+							if (stepsLeft > 0) {
+								stepsLeft--;
+								onHand = enHoles[dropLoc];
+								enHoles[dropLoc] = 0;
+							} else {
+								meTurn = true;
+							}
+						}
+						dropLoc++;
 					}
-					dropLoc++;
 				}
 			}
 		}
 		if (dropLoc == 0) {
-			moveResult.meTurn = true;
-		} else {
-			moveResult.meTurn = false;
+			meTurn = true;
 		}
+		moveResult.meTurn = meTurn;
+		moveResult.steps = step - stepsLeft;
 		return moveResult;
 	}
 
@@ -150,27 +182,6 @@ public class SungkaBoard {
 		return sb.toString();
 	}
 
-	public static void main(String[] args) {
-		SungkaBoard meSB = new SungkaBoard();
-		SungkaBoard enSB = meSB.getEnemyBoard();
-		System.out.println(meSB.toString());
-		System.out.println(enSB.toString());
-		// MoveResult result = meSB.move(true, 1, 1);
-		MoveResult result = meSB.move(true, 1, 0);
-		System.out.println(meSB.toString());
-		System.out.println(enSB.toString());
-		result = meSB.move(result.lastMeSide, result.lastIndex, 0);
-		System.out.println(result);
-		System.out.println(meSB.toString());
-		System.out.println(enSB.toString());
-
-		// TODO: Fix
-		// System.out.println("converter");
-		// System.out.println(Util.fromBytes(Util.toBytes(meSB)).toString());
-		// System.out.println(Util.fromBytes(Util.toBytes(enSB)).toString());
-
-	}
-
 	public static class ScoreContainer {
 		byte score;
 
@@ -184,10 +195,12 @@ public class SungkaBoard {
 		boolean meTurn;
 		boolean lastMeSide;
 		int lastIndex;
+		int steps;
 
 		@Override
 		public String toString() {
-			return "[moveResult=" + meTurn + "; lastMoveSide=" + lastMeSide + "; lastIndex=" + lastMeSide + "]";
+			return "[meTurn=" + meTurn + "; lastMoveSide=" + lastMeSide + "; lastIndex=" + lastIndex + "; steps="
+					+ steps + "]";
 		}
 	}
 }
