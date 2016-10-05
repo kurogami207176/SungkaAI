@@ -106,8 +106,8 @@ public class SungkaBoard {
 			enHoles[location] = 0;
 		}
 		MoveResult moveResult = new MoveResult();
+		dropLoc = location + 1;
 		if (onHand > 0) {
-			dropLoc = location + 1;
 			while (onHand > 0) {
 				// me side drops
 				moveResult.lastMeSide = meSide;
@@ -180,6 +180,29 @@ public class SungkaBoard {
 		}
 		sb.append(">>").append(meScore);
 		return sb.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof SungkaBoard) {
+			SungkaBoard other = (SungkaBoard) o;
+			if (meScore.score != other.meScore.score || enScore.score != other.enScore.score
+					|| enHoles.length != other.enHoles.length || meHoles.length != other.meHoles.length) {
+				return false;
+			}
+			for (int i = 0; i < meHoles.length; i++) {
+				if (meHoles[i] != other.meHoles[i]) {
+					return false;
+				}
+			}
+			for (int i = 0; i < enHoles.length; i++) {
+				if (enHoles[i] != other.enHoles[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
 	}
 
 	public static class ScoreContainer {

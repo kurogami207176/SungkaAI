@@ -1,7 +1,9 @@
 package com.alaindroid.game.sungka;
 
+import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 import java.util.TreeMap;
 
 import com.alaindroid.game.sungka.SungkaBoard.MoveResult;
@@ -10,29 +12,34 @@ public class SungkaMapper {
 	public Map<Integer, MovesResponse> getMoveResults(SungkaBoard board) {
 		Map<Integer, MovesResponse> retVal = new TreeMap<Integer, MovesResponse>();
 		int len = board.meHoles.length;
-		int highestScore = 0;
 		for (int i = 0; i < len; i++) {
 			SungkaBoard clone = board.clone();
 			MoveResult moveResult = clone.move(true, i, Integer.MAX_VALUE);
 			// MoveResult moveResult = clone.move(true, i, 1);
-			if (clone.meScore.score > highestScore) {
+			if (!board.equals(clone)) {
 				retVal.put(i, new MovesResponse(clone, moveResult, i));
 			}
 		}
 		return retVal;
 	}
 
-	public MoveNode getMoveChain(SungkaBoard board) {
-		Map<Integer, MovesResponse> moveNodes = getMoveResults(board);
-		MoveNode node = new MoveNode(board, moveNodes);
-		for (Integer key : moveNodes.keySet()) {
-			MovesResponse resp = moveNodes.get(key);
-			if (resp.moveResult.meTurn) {
-				MoveNode nextNode = getMoveChain(resp.nextState);
-				node.movesNodes.put(key, nextNode);
+	// TODO: Do not user recursive
+	public MoveNode getMoveChain(SungkaBoard board, int depth) {
+		if (depth > 0) {
+			Map<Integer, MovesResponse> moveNodes = getMoveResults(board);
+			MoveNode node = new MoveNode(board, moveNodes);
+			for (Integer key : moveNodes.keySet()) {
+				MovesResponse resp = moveNodes.get(key);
+				if (resp.moveResult.meTurn) {
+					MoveNode nextNode = getMoveChain(resp.nextState, depth - 1);
+					if (nextNode != null) {
+						node.movesNodes.put(key, nextNode);
+					}
+				}
 			}
+			return node;
 		}
-		return node;
+		return null;
 	}
 
 	public static class MoveNode {
@@ -48,28 +55,54 @@ public class SungkaMapper {
 
 		@Override
 		public String toString() {
-			return toString(0);
+			return toString("");
 		}
 
-		public String toString(int level) {
+		public String toString(String prefix) {
 			StringBuilder sb = new StringBuilder();
-			StringBuilder ind = new StringBuilder();
-			for (int i = 0; i < level; i++) {
-				ind.append("\t");
-			}
-			String inde = ind.toString();
-			sb.append(inde).append(board).append("\r\n");
+			// sb.append(inde).append(board).append("\r\n");
 			for (Integer key : movesResponses.keySet()) {
 				MovesResponse moveResponse = movesResponses.get(key);
 				MoveNode moveNode = movesNodes.get(key);
+				String currPrefix = prefix + "•" + key + "•";
 				if (moveNode == null) {
-					sb.append(inde).append(moveResponse.nextState).append("***\r\n");
+					sb.append(currPrefix).append("\r\n").append(moveResponse.nextState).append("***\r\n");
 				} else {
-					sb.append(inde).append(moveNode.toString(level + 1)).append("\r\n");
+					sb.append(currPrefix).append(moveNode.toString(currPrefix)).append("\r\n");
 				}
 			}
 			return sb.toString();
 		}
+
+		public ChainResult getChainResult(ChainResult chainResult, Stack<Integer> stack) {
+			StringBuilder sb = new StringBuilder();
+			ChainResult myChainResult = chainResult;
+			if (myChainResult == null) {
+				myChainResult = new ChainResult();
+			}
+			Stack<Integer> myStack = stack;
+			if (myStack == null) {
+				myStack = new Stack<Integer>();
+			}
+			// sb.append(inde).append(board).append("\r\n");
+			for (Integer key : movesResponses.keySet()) {
+				MovesResponse moveResponse = movesResponses.get(key);
+				MoveNode moveNode = movesNodes.get(key);
+				myStack.push(key);
+				if (moveNode == null) {
+					chainResult.endResult = moveResponse.nextState;
+				} else {
+					getChainResult(myChainResult, myStack);
+					myStack.pop();
+				}
+			}
+			return myChainResult;
+		}
+	}
+
+	public static class ChainResult {
+		public SungkaBoard endResult;
+		byte[] link;
 	}
 
 	public static class MovesResponse {
@@ -101,7 +134,8 @@ public class SungkaMapper {
 			System.out.println(res.nextState);
 			// System.out.println(res.nextState.getEnemyBoard());
 		}
-		MoveNode node = mapper.getMoveChain(meSB.clone());
+		// MoveNode node = mapper.getMoveChain(meSB.clone(), Integer.MAX_VALUE);
+		MoveNode node = mapper.getMoveChain(meSB.clone(), 20);
 		System.out.println("nodes");
 		System.out.println(node);
 		// SungkaBoard clone = meSB.clone();
