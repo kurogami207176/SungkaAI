@@ -1,6 +1,9 @@
 package com.alaindroid.game.sungka;
 
 import java.io.ByteArrayOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.alaindroid.game.sungka.SungkaBoard.ScoreContainer;
 
@@ -60,11 +63,20 @@ public class Util {
 		index = index + input.enHoles.length - 1;
 		retVal[++index] = Byte.MAX_VALUE;
 		retVal[++index] = (byte) input.enScore.score;
-//		for(byte b: retVal){
-//			System.out.print(b + " ");
-//		}
-//		System.out.println();
+		// for(byte b: retVal){
+		// System.out.print(b + " ");
+		// }
+		// System.out.println();
 		return retVal;
 	}
 
+	public static <V, K> Map<V, K> invert(Map<K, V> map) {
+
+		Map<V, K> inv = new HashMap<V, K>();
+
+		for (Entry<K, V> entry : map.entrySet())
+			inv.put(entry.getValue(), entry.getKey());
+
+		return inv;
+	}
 }

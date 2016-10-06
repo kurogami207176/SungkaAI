@@ -1,6 +1,8 @@
 package com.alaindroid.game.sungka;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,8 +11,9 @@ import java.util.Stack;
 import java.util.TreeMap;
 
 import com.alaindroid.game.sungka.SungkaBoard.MoveResult;
+import com.alaindroid.game.sungka.game.PlayerInterface;
 
-public class SungkaMapper {
+public class SungkaMapper implements PlayerInterface {
 	public Map<Integer, MovesResponse> getMoveResults(SungkaBoard board) {
 		Map<Integer, MovesResponse> retVal = new TreeMap<Integer, MovesResponse>();
 		int len = board.meHoles.length;
@@ -25,11 +28,25 @@ public class SungkaMapper {
 		return retVal;
 	}
 
-	// TODO: Implement
+	public Integer onCallback(SungkaBoard board) {
+		return getBestMove(board);
+	}
+
 	public Integer getBestMove(SungkaBoard board) {
 		Map<Integer, MovesResponse> moveNodes = getMoveResults(board);
+		List<MovesResponse> response = new ArrayList<MovesResponse>(moveNodes.values());
+		Collections.sort(response, new Comparator<MovesResponse>() {
 
-		return -1;
+			@Override
+			public int compare(MovesResponse o1, MovesResponse o2) {
+				int retVal = o1.nextState.meScore.score - o2.nextState.meScore.score;
+				if (retVal == 0) {
+					return Boolean.valueOf(o1.moveResult.meTurn).compareTo(o2.moveResult.meTurn);
+				}
+				return retVal;
+			}
+		});
+		return response.get(0).move;
 	}
 
 	@Deprecated
