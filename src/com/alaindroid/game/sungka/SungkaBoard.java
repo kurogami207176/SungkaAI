@@ -69,6 +69,20 @@ public class SungkaBoard {
 		return new SungkaBoard(enHoles, meHoles, enScore, meScore);
 	}
 
+	public boolean isGameEnd() {
+		for (int meHole : meHoles) {
+			if (meHole > 0) {
+				return true;
+			}
+		}
+		for (int enHole : enHoles) {
+			if (enHole > 0) {
+				return true;
+			}
+		}
+		return true;
+	}
+
 	public SungkaBoard clone() {
 		int meLen = this.meHoles.length;
 		int enLen = this.enHoles.length;
@@ -81,6 +95,10 @@ public class SungkaBoard {
 		meScore.score = this.meScore.score;
 		enScore.score = this.enScore.score;
 		return new SungkaBoard(meHoles, enHoles, meScore, enScore);
+	}
+
+	public MoveResult move(boolean me, int location) {
+		return move(me, location, Integer.MAX_VALUE);
 	}
 
 	/**
@@ -206,6 +224,14 @@ public class SungkaBoard {
 	}
 
 	public static class ScoreContainer {
+		public ScoreContainer() {
+
+		}
+
+		public ScoreContainer(byte score) {
+			this.score = score;
+		}
+
 		byte score;
 
 		@Override
