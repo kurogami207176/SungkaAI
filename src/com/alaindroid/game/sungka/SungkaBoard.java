@@ -18,6 +18,9 @@ public class SungkaBoard {
 	private int dropLoc;
 	private boolean meTurn;
 
+	private Rule rule;
+	private Listener listener;
+
 	/*
 	 * Constructors
 	 */
@@ -60,6 +63,14 @@ public class SungkaBoard {
 		this.meDiff = meDiff;
 		this.enDiff = enDiff;
 		this.meHDiff = meHDiff;
+	}
+
+	public void setRule(Rule rule) {
+		this.rule = rule;
+	}
+
+	public void setListener(Listener listener) {
+		this.listener = listener;
 	}
 
 	/*
@@ -110,6 +121,13 @@ public class SungkaBoard {
 	public MoveResult move(boolean me, int location, int step) {
 		if (location < 0 || location >= meHoles.length) {
 			throw new InvalidParameterException("Invalid location " + location);
+		}
+
+		if (listener != null) {
+			listener.onMove(this, me, location, step);
+		}
+		if (rule != null) {
+			rule.preProcess(this, me, location);
 		}
 		meTurn = false;
 		stepsLeft = step;
@@ -176,12 +194,24 @@ public class SungkaBoard {
 					}
 				}
 			}
+			if (listener != null) {
+				listener.onAfterDrop(this, meSide, onHand, dropLoc);
+			}
 		}
 		if (dropLoc == 0) {
 			meTurn = true;
 		}
 		moveResult.meTurn = meTurn;
 		moveResult.steps = step - stepsLeft;
+		if (listener != null) {
+			listener.onBeforePostProcess(this, moveResult);
+		}
+		if (rule != null) {
+			rule.postProcess(this, moveResult);
+		}
+		if (listener != null) {
+			listener.onAfterPostProcess(this);
+		}
 		return moveResult;
 	}
 
@@ -253,7 +283,7 @@ public class SungkaBoard {
 		}
 	}
 
-	public static interface SungkaRules {
+	public static interface Rule {
 		/**
 		 * Transforms the sungkaboard based on the lastMoveResult
 		 * 
@@ -261,6 +291,18 @@ public class SungkaBoard {
 		 * @param lastMoveResult
 		 * @return
 		 */
-		SungkaBoard transform(SungkaBoard lastSungkaState, MoveResult lastMoveResult);
+		public void postProcess(SungkaBoard lastSungkaState, MoveResult lastMoveResult);
+
+		public void preProcess(SungkaBoard lastSungkaState, boolean me, int location);
+	}
+
+	public static interface Listener {
+		public void onMove(SungkaBoard board, boolean me, int location, int step);
+
+		public void onAfterDrop(SungkaBoard board, boolean meSide, int onHand, int dropLoc);
+
+		public void onBeforePostProcess(SungkaBoard board, MoveResult moveResult);
+
+		public void onAfterPostProcess(SungkaBoard board);
 	}
 }
