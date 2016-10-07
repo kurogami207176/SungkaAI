@@ -72,12 +72,12 @@ public class SungkaBoard {
 	public boolean isGameEnd() {
 		for (int meHole : meHoles) {
 			if (meHole > 0) {
-				return true;
+				return false;
 			}
 		}
 		for (int enHole : enHoles) {
 			if (enHole > 0) {
-				return true;
+				return false;
 			}
 		}
 		return true;
@@ -251,5 +251,16 @@ public class SungkaBoard {
 			return "[meTurn=" + meTurn + "; lastMoveSide=" + lastMeSide + "; lastIndex=" + lastIndex + "; steps="
 					+ steps + "]";
 		}
+	}
+
+	public static interface SungkaRules {
+		/**
+		 * Transforms the sungkaboard based on the lastMoveResult
+		 * 
+		 * @param lastSungkaState
+		 * @param lastMoveResult
+		 * @return
+		 */
+		SungkaBoard transform(SungkaBoard lastSungkaState, MoveResult lastMoveResult);
 	}
 }

@@ -13,7 +13,7 @@ import java.util.TreeMap;
 import com.alaindroid.game.sungka.SungkaBoard.MoveResult;
 import com.alaindroid.game.sungka.game.PlayerInterface;
 
-public class SungkaMapper implements PlayerInterface {
+public class SungkaMapper {
 	public Map<Integer, MovesResponse> getMoveResults(SungkaBoard board) {
 		Map<Integer, MovesResponse> retVal = new TreeMap<Integer, MovesResponse>();
 		int len = board.meHoles.length;
@@ -26,10 +26,6 @@ public class SungkaMapper implements PlayerInterface {
 			}
 		}
 		return retVal;
-	}
-
-	public Integer onCallback(SungkaBoard board) {
-		return getBestMove(board);
 	}
 
 	public Integer getBestMove(SungkaBoard board) {
@@ -46,6 +42,9 @@ public class SungkaMapper implements PlayerInterface {
 				return retVal;
 			}
 		});
+		if (response == null || response.size() <= 0) {
+			return null;
+		}
 		return response.get(0).move;
 	}
 
